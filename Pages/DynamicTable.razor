@@ -1,0 +1,180 @@
+﻿@typeparam T
+<section class="dynamic-table">
+    <div class="table-header">
+        <h1>@TableTitle</h1>
+    </div>
+    <div class="table @tableSizeClass">
+        <div class="table-body">
+            <table>
+                <thead>
+                    <tr>
+                        <th>S/N</th>
+                        @foreach (PropertyInfo property in properties)
+                        {
+                            @if (!SkipHeaderNames.Contains(property.Name))
+                            {
+                                <th style="cursor:pointer;">
+                                    <span @onclick="() => SortByColumn(property)">
+                                        @property.Name
+                                        @if (property == sortedColumn)
+                                        {
+                                            <span>@(isAscending ? "▲" : "▼")</span>
+                                        }
+                                    </span>
+                                </th>
+                            }
+                        }
+                        @if (EnableButton)
+                        {
+                            <th>@ButtonName</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (T item in TableItems)
+                    {
+                        itemCount++;
+                        <tr>
+                            <td>@itemCount</td>
+                            @foreach (PropertyInfo property in properties)
+                            {
+                                if (!SkipHeaderNames.Contains(property.Name))//(!property.Name.Equals("Id") && !property.Name.Equals("Password") && !property.Name.Equals("Password2"))//I don't need to display'
+                                {
+                                    object value = property.GetValue(item);
+                                    if (value != null)
+                                    {
+                                        Type dataType = value.GetType();
+                                        switch (dataType.Name)
+                                        {
+                                            case "Int32":
+                                                <td>&#8358; @((int)value)&nbsp;&nbsp;</td>
+                                                break;
+                                            case "String":
+                                                <td>@((string)value)&nbsp;&nbsp;</td>
+                                                break;
+                                            case "DateTime":
+                                                <td>@(((DateTime)value).ToString("MMM d, yyyy hh:mm tt"))&nbsp;&nbsp;</td>
+                                                break;
+                                            default:
+                                                <td>@value&nbsp;&nbsp;</td>
+                                                break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <td>Nil</td>
+                                    }
+                                }
+                            }
+                            @if (EnableButton)
+                            {
+                                <td><button @onclick="TableButtonClicked" class="btn btn-primary">@ButtonName</button></td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+
+
+@code {
+    [Parameter]
+    public List<T> TableItems { get; set; } = new();
+    PropertyInfo[] properties = typeof(T).GetProperties();
+    [Parameter]
+    public bool InitializeSortByTime { get; set; } = false;
+    [Parameter]
+    public string TableTitle { get; set; } = string.Empty;
+    [Parameter]
+    public List<string> SkipHeaderNames { get; set; } = new();
+    [Parameter]
+    public bool EnableButton { get; set; } = false;
+    [Parameter]
+    public string ButtonName { get; set; } = "";
+    [Parameter]
+    public EventCallback OnTableButtonEvent { get; set; }
+    int itemCount = 0;
+    string tableSizeClass = "scanty";
+
+    protected override void OnInitialized()
+    {
+        if (InitializeSortByTime)
+        {
+            SortByDateTimeInitial(properties, false, true);
+        }
+        if (TableItems.Count > 5)
+            tableSizeClass = "large";
+    }
+    protected override void OnAfterRender(bool firstRender)
+    {
+        itemCount = 0;
+    }
+    public void TableButtonClicked()
+    {
+        OnTableButtonEvent.InvokeAsync();
+    }
+    private void SortByDateTimeInitial(PropertyInfo[] prop, bool asc, bool isSort)
+    {
+        if (prop.Length > 0)
+        {
+            if (isSort)
+            {
+                foreach (var p in prop)
+                {
+                    if (p.PropertyType.Name == "DateTime")
+                    {
+                        if (!asc)
+                        {
+                            sortedColumn = p;
+                        }
+                        SortByColumn(p);
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                SortByColumn(prop[0]);
+            }
+        }
+    }
+
+
+    //GPT code for sort
+    private List<T> data = new List<T>();
+
+    // Sort state variables
+    private PropertyInfo sortedColumn;
+    private bool isAscending = true;
+    // Method to handle column header click and perform sorting
+    private void SortByColumn(PropertyInfo column)
+    {
+        // If the same column is clicked, reverse the sort order
+        if (column == sortedColumn)
+        {
+            isAscending = !isAscending;
+        }
+        else
+        {
+            // Set the new sorted column and reset the sort order to ascending
+            sortedColumn = column;
+            isAscending = true;
+        }
+
+        // Perform the sorting based on the selected column and sort order
+        if (isAscending)
+        {
+            TableItems = TableItems.OrderBy(item => sortedColumn.GetValue(item)).ToList();
+        }
+        else
+        {
+            TableItems = TableItems.OrderByDescending(item => sortedColumn.GetValue(item)).ToList();
+        }
+        itemCount = 0;
+    }
+
+}
+

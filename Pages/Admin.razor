@@ -1,0 +1,262 @@
+﻿@page "/admin"
+@if (isAdmin)
+{
+<div class="container">
+    <div class="survey-box">
+        <div class="input">
+            <h1>Select What to do</h1>
+            <select @bind="selected">
+                <option value="1">Create Survey</option>
+                <option value="2">Add Questions</option>
+                <option value="3">Edit Questions</option>
+                <option value="4">Show Survey Names</option>
+                <option value="5">View Users</option>
+                <option value="6">Show Results</option>
+            </select>
+        </div>
+
+        @if (selected == 1)
+        {
+            <h1>Create a new Survey</h1>
+            <div class="input">
+                <span class="@flag">@msg</span>
+                <input @bind="surveyName" type="text" placeholder="enter survey name"/>
+                <button @onclick="SubmitSurvey" class="btn btn-primary">Submit</button>
+            </div>
+        }
+        else if (selected == 2)
+        {
+            <h1>Add questions</h1>
+            <div class="input">
+                <span class="@flag">@msg</span>
+                <select @bind="surveyId">
+                    <option value="">Select Survey to add question</option>
+                    @foreach (var item in surveyNames.Values)
+                    {
+                        <option value="@item.Id">@item.Title</option>
+                    }
+                </select>
+                <textarea @onfocusin="Clear" @bind="question" placeholder="Enter Question here"></textarea>
+                <button @onclick="AddQuestion" class="btn btn-primary">Submit</button>
+            </div>
+        }
+        else if(selected == 3)
+        {
+            @foreach (var q in questions)
+            {
+                <div class="question">
+                    <div class="question-text">
+                        <textarea @bind="q.Value.Question"></textarea>
+                    </div>
+                    <div class="true-false-btns">
+                        <button class="green" @onclick="(() => Edit(q.Value))">Edit</button>
+                        <button class="red" @onclick="(() => Delete(q.Value.Id))">Delete</button>
+                    </div>
+                </div>
+                count++;
+            }
+        }
+        else if (selected == 4)
+        {
+            if (surveyNames.Count > 0)
+            {
+                <section class="dynamic-table">
+                    <div class="table-header">
+                        <h1 class="heading">Survey Names</h1>
+                    </div>
+                    <div class="table scanty">
+                        <div class="table-body">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>S/N</th>
+                                        <th>Survey Name</th>
+                                        <th>Is Active</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var name in surveyNames.Values)
+                                    {
+                                        <tr>
+                                            <td>@count</td>
+                                            <td>@name.Title</td>
+                                            <td><input type="checkbox" checked="@name.IsActive" @onchange="(() => SetSurveyAsActive(name.Id))"/></td>
+                                        </tr>
+                                        count++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            }
+        }
+        else if (selected == 5)
+        {
+            <DynamicTable TableItems="users" SkipHeaderNames="skipUserId" TableTitle="Participated Users" />
+        }
+        else if (selected == 6)
+        {
+            <DynamicTable SkipHeaderNames="skipResultDate" TableItems="answers"/>
+        }
+    </div>
+</div>
+}
+else
+{
+    <div class="input">
+        <input @bind="code" @onfocusout="AllowAdmin" placeholder="Enter adminisistrative code"/>
+        <button class="btn btn-primary">Submit</button>
+    </div>
+}
+
+@code{
+    int selected = 0;
+    int count = 0;
+    string surveyName = "";
+    string msg = "";
+    string flag = "";
+    string question = "";
+    string surveyId = "";
+    string activeSurvey = "";
+    bool isAdmin = false;
+    string code = "";
+    List<KeyValuePair<string, Questions>> questions = new();
+    Dictionary<string,Surveys> surveyNames = new();
+    List<User> users = new();
+    List<string> skipUserId = new() { "Id" };
+    List<string> skipResultDate = new() { "Date" };
+    List<Answer> answers = new();
+    protected override void OnInitialized()
+    {
+        selected = 2;
+        surveyNames = database.ReadAll<string,Surveys>("SurveyName");
+        var sv = surveyNames.Values.FirstOrDefault(x => x.IsActive);
+        if (sv != null)
+        {
+            string id = sv?.Id ?? "";
+            activeSurvey = sv?.Title ?? "";
+            var q = database.ReadAll<string, Questions>("Questions");
+            questions = q.Where(x => x.Value.Survey.Id == id).OrderBy(x => x.Value.Date).ToList();
+        }
+        users = database.ReadAll<string, User>("Users").Values.ToList();
+        var responses = database.ReadAll<string,Questions>("Responses").Values.ToList();
+        GetAnswers(responses);
+    }
+    private void GetAnswers(List<Questions> responses)
+    {
+        var questions = responses.DistinctBy(x => x.Id).ToList();
+        foreach (var response in questions)
+        {
+            int answerCount = responses.Where(x => x.Id.Equals(response.Id) && x.Answer.Equals(true) && x.Survey.Title.Equals(activeSurvey)).Count();
+            int totalCount = responses.Where(x => x.Id.Equals(response.Id) && x.Survey.Title.Equals(activeSurvey)).Count();
+            if (answerCount > 0 && totalCount > 0)
+            {
+                int result = (int)(((double)answerCount / totalCount) * 100);
+                var ans = new Answer()
+                {
+                    SurveyName = response.Survey.Title,
+                    Question = response.Question,
+                    Result = $"{result} %",
+                    Date = response.Date
+                };
+                answers.Add(ans);
+            }
+        }
+        if (answers.Count > 0)
+        {
+            answers = answers.OrderBy(x => x.Date).ToList(); 
+        }
+    }
+    private void SetSurveyAsActive(string id)
+    {
+        count = 0;
+        var survName = surveyNames.FirstOrDefault(x => x.Value.Id == id).Value;
+        if (survName != null)
+        {
+            survName.IsActive = !survName.IsActive;
+            string key = JsonConvert.SerializeObject(survName.Id);
+            string value = JsonConvert.SerializeObject(survName);
+            var isCreated = database.Create("SurveyName", key, value);
+        }
+    }
+
+    private void SubmitSurvey()
+    {
+        if (surveyName != "")
+        {
+            Surveys sv = new Surveys();
+            sv.Id = Guid.NewGuid().ToString();
+            sv.IsActive = false;
+            sv.Title = surveyName;
+            string key = JsonConvert.SerializeObject(sv.Id);
+            string value = JsonConvert.SerializeObject(sv);
+            var isCreated = database.Create("SurveyName", key, value);
+            if (isCreated)
+            {
+                surveyName = "";
+                sv = new();
+                msg = "Survey created successfully";
+                flag = "green";
+            }
+        }
+    }
+    private void AddQuestion()
+    {
+        if (question != "" && surveyId != "")
+        {
+            var survey = surveyNames.Values.FirstOrDefault(x => x.Id == surveyId);
+            if (survey != null)
+            {
+                Questions q = new Questions()
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Answer = false,
+                        Question = question,
+                        Survey = survey,
+                        Date = DateTime.Now
+                    };
+                string key = JsonConvert.SerializeObject(q.Id);
+                string value = JsonConvert.SerializeObject(q);
+                var isCreated = database.Create("Questions", key, value);
+                if (isCreated)
+                {
+                    question = "";
+                    q = new();
+                    msg = "Question Added successfully";
+                    flag = "green";
+                }
+            }
+        }
+    }
+    private void Edit(Questions q)
+    {
+        string key = JsonConvert.SerializeObject(q.Id);
+        string value = JsonConvert.SerializeObject(q);
+        var isCreated = database.Create("Questions", key, value);
+        if (isCreated)
+        {
+            q.Question = "Edit completed successfully";
+        }
+    }
+    private void Delete(string id)
+    {
+        var isDel = database.Delete("Questions", id);
+        if (isDel)
+        {
+            questions = questions.Where(x => x.Value.Id != id).OrderBy(y => y.Value.Date).ToList();
+        }
+    }
+    private void Clear()
+    {
+        msg = "";
+        flag = "";
+    }
+    private void AllowAdmin()
+    {
+        if (code == "$admin0000Secure$")
+        {
+            isAdmin = true; 
+        }
+    }
+}

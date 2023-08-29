@@ -1,0 +1,160 @@
+﻿@page "/"
+
+<div class="container">
+    <div class="survey-box">
+        <div class="header">
+            <img class="logo" src="./img/1_LOGO.png" alt="Company Logo">
+            <div class="company-name">Peter's Soft Network (PSN)</div>
+            <div class="company-motto">
+                Revolutionizing Multiple Industries Through Innovative
+                Software Solutions
+            </div>
+            <div class="input">
+                <span class="@flag">@message</span>
+                <input @bind="email" @onblur="IsEmailValid" type="text" placeholder="kindly input active email"/>
+                <input @bind="mobile" @onblur="IsMobileValid" type="text" placeholder="input active phone number"/>
+            </div>
+        </div>
+
+        <div class="question-box">
+            <h2>@activeSurvey Survey</h2>
+            <p class="p">
+                Kindly answer true or false to each of this
+                questions and submit to facilitate this survey
+            </p>
+            @foreach (var q in questions)
+            {
+                <div class="question">
+                    <div class="question-text">Question @count: @q.Value.Question</div>
+                    <div class="true-false-btns">
+                        <button class="@(buttonClickTracker.ContainsKey(q.Value.Id) && buttonClickTracker[q.Value.Id] ? "active" : "")" @onclick="(() => Submit(q.Value,true))">true</button>
+                        <button class="@(buttonClickTracker.ContainsKey(q.Value.Id) && !buttonClickTracker[q.Value.Id] ? "active" : "")" @onclick="(() => Submit(q.Value,false))">false</button>
+                    </div>
+                </div>
+                count++;
+            }
+            <span class="@flag">@msg</span><br />
+            <button @onclick="SubmitResponse" class="btn btn-primary">Submit</button>
+        </div>
+    </div>
+</div>
+
+@code{
+    int count = 1;
+    string flag = "red";
+    string msg = "";
+    string surveyId = "";
+    string activeSurvey = "";
+    bool isEmailValid = false;
+    bool isMobileValid = false;
+    string message = "kindly supply your info below";
+    string email = "";
+    string mobile = "";
+    bool hasParticipated = false;
+    List<KeyValuePair<string, Questions>> questions = new();
+    Dictionary<string, bool> buttonClickTracker = new Dictionary<string, bool>();
+    protected override void OnInitialized()
+    {
+        var surveyNames = database.ReadAll<string, Surveys>("SurveyName");
+        var sv = surveyNames.Values.FirstOrDefault(x => x.IsActive);
+        if (sv != null)
+        {
+            activeSurvey = sv.Title;
+            string id = sv?.Id ?? "";
+            var q = database.ReadAll<string, Questions>("Questions");
+            questions = q.Where(x => x.Value.Survey.Id == id).OrderBy(x => x.Value.Date).ToList();
+        }
+        surveyId = Guid.NewGuid().ToString();
+    }
+    private void Submit(Questions q,bool answer)
+    {
+        count = 1;
+        if (buttonClickTracker.ContainsKey(q.Id))
+        {
+            buttonClickTracker[q.Id] =  answer;
+        }
+        else
+        {
+            buttonClickTracker.Add(q.Id, answer);
+        }
+        hasParticipated = true;
+        q.Answer = answer;
+        q.AnswerId = $"{surveyId}_{q.Id}";
+        string key = JsonConvert.SerializeObject(q.AnswerId);
+        string value = JsonConvert.SerializeObject(q);
+        var isCreated = database.Create("Responses", key, value);
+    }
+    private async void IsEmailValid()
+    {
+        string pattern = @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$";
+        Regex regex = new Regex(pattern);
+        isEmailValid = regex.IsMatch(email);
+        if (!isEmailValid)
+        {
+            message = "email field is invalid, email must be in the form abc@xyz.com";
+            flag = "red";
+        }
+        else
+        {
+            await MailService.Send("peters.soft.network@gmail.com", email,"Easy Life Feasibility Survey",
+            "<p>Thank you for participating in our online survey to facilitate our easy life project</p>");
+            message = "";
+        }
+
+    }
+    private void IsMobileValid()
+    {
+        if (!string.IsNullOrEmpty(mobile))
+        {
+            string pattern = @"^(?:\+?\d{1,3})?(?:0|\d{1,4})\d{10}$";
+            Regex regex = new Regex(pattern);
+            if (mobile.Contains("+") || (!mobile.Contains("+") && mobile.Length == 11 && mobile.StartsWith("0")))
+            {
+                isMobileValid = regex.IsMatch(mobile);
+                if (!isMobileValid)
+                {
+                    message = "Mobile must have max of 14 characters \n" +
+                        "It may include '+' sign, country code and mobile digits";
+                    flag = "red";
+                }
+                else
+                {
+                    message = "Mobile number is valid";
+                    flag = "green";
+                }
+            }
+            else
+            {
+                message = "Mobile number is not in a correct format";
+                flag = "red";
+            }
+        }
+    }
+    private void SubmitResponse()
+    {
+        count = 0;
+        if (hasParticipated)
+        {
+            msg = "Thanks for participating in this survey";
+            flag = "green";
+            if (email != "" && mobile != "")
+            {
+                var user = new User()
+                    {
+                        Id = surveyId,
+                        Email = email,
+                        Mobile = mobile,
+                        Date = DateTime.Now
+                    };
+                string key = JsonConvert.SerializeObject(user.Id);
+                string value = JsonConvert.SerializeObject(user);
+                database.Create("Users", key, value);
+            }
+        }
+        else
+        {
+            msg = "kindly participate in the survey before submitting.";
+            flag = "red";
+        }
+    }
+}

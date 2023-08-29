@@ -1,0 +1,17 @@
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\Survey.exe
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\appsettings.Development.json
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\appsettings.json
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\Survey.dll
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\Survey.deps.json
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\Survey.runtimeconfig.json
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\Survey.pdb
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\BouncyCastle.Cryptography.dll
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\DBreeze.dll
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\MailKit.dll
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\MimeKit.dll
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\Newtonsoft.Json.dll
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\System.Formats.Asn1.dll
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\System.Security.Cryptography.Pkcs.dll
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\System.Text.Encoding.CodePages.dll
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\runtimes\win\lib\net6.0\System.Security.Cryptography.Pkcs.dll
+C:\Users\peter soft\source\repos\Survey\Survey\bin\release\net6.0\publish\runtimes\win\lib\net6.0\System.Text.Encoding.CodePages.dll

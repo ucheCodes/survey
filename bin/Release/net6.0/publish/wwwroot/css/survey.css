@@ -1,0 +1,118 @@
+﻿body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+/*    height: 100vh;*/
+/*    background-color: #f1f1f1;*/
+}
+
+.survey-box {
+    max-width: 600px;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    background-color: #fff;
+    margin: 1rem 0;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.logo {
+    width: 90px;
+    height: 90px; 
+/*    margin: 10px;*/
+}
+.input{
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+.input input, textarea, select {
+    padding: .2rem;
+    width: 100%;
+    margin: .5rem 0;
+    border-radius: .5rem;
+    font-size: .8rem;
+    color: #000;
+    text-transform: none;
+}
+.red{
+    color: maroon;
+}
+.green{
+    color: green;
+}
+.p {
+    font-size: .9rem;
+    color: #000;
+    line-height: 1.8;
+    padding: .1rem 0;
+    text-align: center;
+}
+.company-name,h1 {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 30px;
+}
+
+.company-motto {
+    font-size: 16px;
+    color: #666;
+}
+
+.question-box {
+    overflow-y: scroll;
+    max-height: 50vh;
+}
+.question {
+    margin-bottom: 15px;
+}
+
+.question-text {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.true-false-btns {
+    display: flex;
+    justify-content: space-around;
+}
+
+.true-false-btns button {
+    font-size: 1rem;
+    cursor: pointer;
+    background-color: maroon;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+}
+button.active {
+    background-color: darkgreen;
+    color: #fff;
+}
+@media screen and (max-width: 600px) {
+    .survey-box {
+        width: 90%;
+    }
+    .question-text {
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+    .company-name,h1 {
+        font-size: 20px;
+        font-weight: bold;
+        margin-top: 30px;
+    }
+
+    .company-motto {
+        font-size: 12px;
+        color: #666;
+    }
+}
